@@ -1,0 +1,17 @@
+.idea/
+.run/
+venv/
+*/**/__pycache__/
+*/**/*egg-info/
+.coverage
+__pycache__/
+build/
+dist/
+.env
+.kratos
+.pytest_cache
+temp/
+**/*.log
+env/*
+!env/*.*.*
+config.json
