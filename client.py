@@ -1,15 +1,13 @@
-import aiofiles
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 
-from config import Config, cfg
+from config import cfg
 from models import Concert, Region
 from logger import logger
 
 
 class Client:
-    config: Config
     session: aiohttp.ClientSession
 
     def __init__(self, session: aiohttp.ClientSession):
@@ -27,6 +25,7 @@ class Client:
         return regions
 
     async def parse_region(self, region) -> Concert:
+        logger.info(f"{region.id:^12} Parsing region {region.name}")
         return Concert(region=region)
 
     async def make_request(self, method, url, attempts=cfg.request_attempts, **kwargs):
@@ -50,7 +49,7 @@ class Client:
                     try:
                         result = await response.json()
                     except Exception as e:
-                        logger.error(f"Can not decode body JSON: {e}")
+                        # logger.error(f"Can not decode body JSON: {e}")
                         result = await response.read()
 
                     # logger.debug(f"{url}: RESPONSE BODY: {result}")
