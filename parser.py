@@ -33,7 +33,7 @@ class Parser:
             # parsing selected region
             tasks = [self.client.parse_region(r) for r in cfg.to_parse]
             result = await asyncio.gather(*tasks)
-            # logger.debug(result)
+            logger.debug(result)
             return dict()
 
     def save(self):

@@ -24,9 +24,41 @@ class Client:
 
         return regions
 
-    async def parse_region(self, region) -> Concert:
+    async def parse_region(self, region) -> dict[str, Concert]:
+        # TODO: implement pagination
+        concerts = {}
+        page = 1
+        while True:
+            concerts = await self._get_page(page, region)
+            page += 1
+
+            break
+
+        return concerts
+
+    async def _get_page(self, page: int, region: Region) -> dict[str, Concert]:
+        result = {}
+        url = cfg.concerts_url.format(region=region.id, page=page)
+        response, status = await self.make_request("GET", url)
+        print(response)
+
         logger.info(f"{region.id:^12} Parsing region {region.name}")
-        return Concert(region=region)
+        soup = BeautifulSoup(response, 'html.parser')
+        for item in soup.find_all("div", {"class": "card-search--show"}):
+            item = item.find("a", {"class": "card-search__name"})
+            print()
+            # TODO: implement concert parsing
+            concert_id = item.attrs["data-show-id"]
+            result[concert_id] = Concert(
+                region=region,
+                name=item.text,
+                date=...,
+                price=...,
+                url=...,
+                id=concert_id,
+            )
+        return result
+
 
     async def make_request(self, method, url, attempts=cfg.request_attempts, **kwargs):
         while attempts:

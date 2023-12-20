@@ -4,12 +4,9 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import aiofiles
-from pydantic import BaseConfig, validator
+from pydantic import BaseConfig
 
 from models import Region
-from logger import logger
-
-
 
 
 class Config(BaseConfig):
@@ -21,6 +18,7 @@ class Config(BaseConfig):
 
     update_regions: bool = False
     regions_url: str = "https://www.ticketland.ru/afisha/"
+    concerts_url: str = "https://{region}.ticketland.ru/concert/page-{page}/"
     url: str
 
     def __init__(self):
