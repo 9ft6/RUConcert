@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
-from bs4 import BeautifulSoup
+import json
+from bs4 import BeautifulSoup, element
 
 from config import cfg
 from models import Concert, Region
@@ -14,7 +15,7 @@ class Client:
         self.session = session
 
     async def get_regions(self) -> list[Region]:
-        response, status = await self.make_request("GET", cfg.regions_url)
+        response, status = await self._make_request("GET", cfg.regions_url)
 
         regions = []
         soup = BeautifulSoup(response, 'html.parser')
@@ -24,43 +25,35 @@ class Client:
 
         return regions
 
-    async def parse_region(self, region) -> dict[str, Concert]:
-        # TODO: implement pagination
-        concerts = {}
+    async def parse_region(self, region) -> dict[str, dict[str, Concert]]:
+        result = {}
         page = 1
-        while True:
-            concerts = await self._get_page(page, region)
+        while concerts := await self._get_page(page, region):
+            result.update(concerts)
             page += 1
 
-            break
+        return {region.id: result}
 
-        return concerts
-
-    async def _get_page(self, page: int, region: Region) -> dict[str, Concert]:
-        result = {}
+    async def _get_page(self, page: int, region: Region) -> dict[str, dict]:
         url = cfg.concerts_url.format(region=region.id, page=page)
-        response, status = await self.make_request("GET", url)
-        print(response)
+        response, status = await self._make_request("GET", url)
+        if status == 200:
+            soup = BeautifulSoup(response, 'html.parser')
+            search = soup.find("section", {"class": "search__body"})
+            scripts = search.find_all("script", {"type": "application/ld+json"})
+            divs = search.find_all("div", {"class": "card-search--show"})
 
-        logger.info(f"{region.id:^12} Parsing region {region.name}")
-        soup = BeautifulSoup(response, 'html.parser')
-        for item in soup.find_all("div", {"class": "card-search--show"}):
-            item = item.find("a", {"class": "card-search__name"})
-            print()
-            # TODO: implement concert parsing
-            concert_id = item.attrs["data-show-id"]
-            result[concert_id] = Concert(
-                region=region,
-                name=item.text,
-                date=...,
-                price=...,
-                url=...,
-                id=concert_id,
-            )
-        return result
+            concerts = [self._parse_concert(s, d, region) for s, d in zip(scripts, divs)]
+            return {c.id: c.dict() for c in concerts}
 
+    def _parse_concert(self, concert: element.Tag, div: element.Tag, region: Region) -> Concert:
+        return Concert(
+            region=region,
+            id=div.attrs["data-show-id"],
+            **json.loads(concert.text)
+        )
 
-    async def make_request(self, method, url, attempts=cfg.request_attempts, **kwargs):
+    async def _make_request(self, method, url, attempts=cfg.request_attempts, **kwargs):
         while attempts:
             try:
                 async with self.session.request(method, url, **kwargs) as response:
@@ -71,7 +64,7 @@ class Client:
                     if response.status >= 300:
                         logger.warning(f"{url}: got a {response.status} response code")
                         attempts -= 1
-                        return await self.make_request(
+                        return await self._make_request(
                             method,
                             url,
                             attempts=attempts,
@@ -103,7 +96,7 @@ class Client:
                 if not attempts:
                     break
 
-                return await self.make_request(method, url, attempts=attempts, **kwargs)
+                return await self._make_request(method, url, attempts=attempts, **kwargs)
 
         logger.error(f"{url}: Exceeded the number of attempts to perform {method.upper()} request")
         return None, None

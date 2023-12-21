@@ -15,4 +15,13 @@ class Region(ConfiguredModel):
 
 
 class Concert(ConfiguredModel):
-    region: Region
+    id: str = Field(..., alias="id")
+    region: Region = Field(..., alias="region")
+    name: str = Field(..., alias="name")
+    image: str = Field(..., alias="image")
+    description: str = Field(..., alias="description")
+    url: str = Field(..., alias="url")
+    start_date: str = Field(..., alias="startDate")
+    end_date: str = Field(..., alias="endDate")
+    location: dict = Field(..., alias="location")
+    offers: dict = Field(..., alias="offers")
