@@ -49,6 +49,3 @@ class Parser:
         result = {r: {i: c for i, c in cs.items()} for r, cs in result.items()}
         with open(filename, "w") as file:
             json.dump(result, file, indent=4, ensure_ascii=False)
-
-    def _get_config(self):
-        return {}
